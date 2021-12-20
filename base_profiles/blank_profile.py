@@ -1,0 +1,9 @@
+class Profile():
+    BLOCKCHAIN_NAME: str
+    RPC_URL: str
+    CHAIN_ID: int
+    CURRENCY_SYMBOL: str
+    EXPLORER_URL: str
+    TX_SUB: str
+    ADDRESS_SUB: str
+    COLOR: str
