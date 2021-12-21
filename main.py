@@ -6,6 +6,7 @@ Discord: AlpineDev.eth#3596
 """
 import colorama
 import web3
+from web3.method import Munger
 import base_profiles.eth_profile as eth
 import base_profiles.poly_mumbai_profile as polyTest
 import base_profiles.poly_profile as poly
@@ -58,10 +59,14 @@ def main():
         s = ""
         if(action == 1):
             #Read Logic
+            m_index = 0
+            m_list = []
             j = 0
+
             for x in contract_abi:
                 if(x["stateMutability"] == "pure" or x["stateMutability"] == "view"):
                     j += 1
+                    m_list.append(m_index)
                     print("{i}. {R}{a}{E}(".format(i=j,R=Fore.RED,a=x["name"], E=Style.RESET_ALL), end="")
                     for d, i in enumerate(x["inputs"]):
                         if(d == len(x["inputs"])-1):
@@ -69,15 +74,43 @@ def main():
                         else:
                             print("{G}{a} {B}{b}{E},".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL), end="")
                     print()
+                m_index += 1
+
             if(j == 0):
                 s = "No read functions."
             indice = int(input(": "))-1
-            ds = contract_abi[j]
-            for item in 
+            clear_screen()
+            ds = contract_abi[m_list[indice]]
+            print("{R}{a}{E}".format(R=Fore.RED,a=ds["name"], E=Style.RESET_ALL), end="\n")
+            t_inputs = []
+            for d, i in enumerate(ds["inputs"]):
+                ti = input("{G}{a} {B}{b}{E}: ".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL))
+                if(i["type"] == "string"):
+                    t_inputs.append(ti)
+                elif(i["type"] == "bytes"):
+                    t_inputs.append(w3.toBytes(text=ti))
+                elif(i["type"][:4] == "uint" and "[" not in i["type"]):
+                    t_inputs.append(w3.toInt(text=ti))
+                elif("[" in i["type"]):
+                    #handle list
+                    if(i["type"][:6] == "string"):
+                        func = str
+                    elif(i["type"][:5] == "bytes"):
+                        func = w3.toBytes
+                    elif(i["type"][:4] == "uint"):
+                        func = w3.toInt
+
+                    tl = json.loads(ti)
+                    t_inputs.append([func(text=m) for m in tl])
+                else:
+                    s = ("Custom structs are not yet supported!")
+                    break 
+            #WORK BEGINS BACK HERE: PUT THIS IN THE CONTRACT
             break
         if(action == 2):
             #Write Logic
-            #pass
+            pass
+
         if(s):
             print('{r}{m}{a}'.format(r=Fore.RED,m=s, a=Style.RESET_ALL))
         clear_screen()
