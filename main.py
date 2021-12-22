@@ -99,9 +99,6 @@ def main():
                 elif(i["type"][:4] == "uint" and "[" not in i["type"]):
                     t_inputs.append(w3.toInt(text=ti))
                 elif(i["type"][:7] == "address" and "[" not in i["type"]):
-                    if(ti[:2] != "0x"):
-                        ti = ens.address(ti)
-                    print(ti)
                     t_inputs.append(w3.toChecksumAddress(ti))
                 elif("[" in i["type"]):
                     #handle list
