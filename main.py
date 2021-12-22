@@ -5,8 +5,6 @@ Twitter: @alpineeth
 Discord: AlpineDev.eth#3596
 """
 import colorama
-import web3
-from web3.method import Munger
 import base_profiles.eth_profile as eth
 import base_profiles.poly_mumbai_profile as polyTest
 import base_profiles.poly_profile as poly
@@ -25,7 +23,7 @@ def select_profile(key: int):
         return polyTest.Profile
 
 def clear_screen():
-    print("\n"*100, end="")
+    print("\n", end="")
     
 def main():
     #Get user info
@@ -64,53 +62,74 @@ def main():
             j = 0
 
             for x in contract_abi:
-                if(x["stateMutability"] == "pure" or x["stateMutability"] == "view"):
-                    j += 1
-                    m_list.append(m_index)
-                    print("{i}. {R}{a}{E}(".format(i=j,R=Fore.RED,a=x["name"], E=Style.RESET_ALL), end="")
-                    for d, i in enumerate(x["inputs"]):
-                        if(d == len(x["inputs"])-1):
-                            print("{G}{a} {B}{b}{E})".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL), end="")
-                        else:
-                            print("{G}{a} {B}{b}{E},".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL), end="")
-                    print()
+                if(x["type"] == "function"):
+                    if(x["stateMutability"] == "pure" or x["stateMutability"] == "view"):
+                        j += 1
+                        m_list.append(m_index)
+                        print("{i}. {R}{a}{E}(".format(i=j,R=Fore.RED,a=x["name"], E=Style.RESET_ALL), end="") 
+                        i_iters = 0
+                        for d, i in enumerate(x["inputs"]):
+                            i_iters += 1
+                            if(d == len(x["inputs"])-1):
+                                print("{G}{a} {B}{b}{E})".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL), end="")
+                            else:
+                                print("{G}{a} {B}{b}{E},".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL), end="")
+                        if(i_iters == 0):
+                            print(")", end="")
+                        print()
                 m_index += 1
 
             if(j == 0):
                 s = "No read functions."
-            indice = int(input(": "))-1
+            indice =input(": ")
+            if(indice == "exit" or indice == "0"):
+                break
+            indice = int(indice)-1
             clear_screen()
             ds = contract_abi[m_list[indice]]
             print("{R}{a}{E}".format(R=Fore.RED,a=ds["name"], E=Style.RESET_ALL), end="\n")
             t_inputs = []
             for d, i in enumerate(ds["inputs"]):
                 ti = input("{G}{a} {B}{b}{E}: ".format(G=Fore.GREEN,a=i["type"],b=i["name"], B=Fore.BLUE, E=Style.RESET_ALL))
+                
                 if(i["type"] == "string"):
                     t_inputs.append(ti)
-                elif(i["type"] == "bytes"):
+                elif(i["type"][:5] == "bytes" and "[" not in i["type"]):
                     t_inputs.append(w3.toBytes(text=ti))
                 elif(i["type"][:4] == "uint" and "[" not in i["type"]):
                     t_inputs.append(w3.toInt(text=ti))
+                elif(i["type"][:7] == "address" and "[" not in i["type"]):
+                    if(ti[:2] != "0x"):
+                        ti = ens.address(ti)
+                    print(ti)
+                    t_inputs.append(w3.toChecksumAddress(ti))
                 elif("[" in i["type"]):
                     #handle list
+                    custom = 0
                     if(i["type"][:6] == "string"):
                         func = str
                     elif(i["type"][:5] == "bytes"):
                         func = w3.toBytes
                     elif(i["type"][:4] == "uint"):
                         func = w3.toInt
-
-                    tl = json.loads(ti)
-                    t_inputs.append([func(text=m) for m in tl])
+                    elif(i["type"][:7] == "address"):
+                        func = w3.toChecksumAddress
+                        custom = 1
+                        tl = json.loads(ti)
+                        t_inputs.append([func(m) for m in tl])
+                    if(not custom):
+                        tl = json.loads(ti)
+                        t_inputs.append([func(text=m) for m in tl])
                 else:
                     s = ("Custom structs are not yet supported!")
                     break 
-            #WORK BEGINS BACK HERE: PUT THIS IN THE CONTRACT
-            break
+            #finally call (read) function using our data
+            resp = contract.functions[ds['name']](*t_inputs).call()
+            print(": ", end="")
+            print((resp))
         if(action == 2):
             #Write Logic
             pass
-
         if(s):
             print('{r}{m}{a}'.format(r=Fore.RED,m=s, a=Style.RESET_ALL))
         clear_screen()
